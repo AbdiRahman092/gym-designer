@@ -401,8 +401,22 @@ const CATALOG = [
    {type:'pillar',name:'Pillar',w:0.4,h:0.4,shape:'pillar'},
    {type:'door',name:'Door',w:1.0,h:0.1,shape:'door'},
  ]},
+ {cat:'From video', color:'#5bb1c9', items:[
+   {type:'spinbike',name:'Spin Bike',w:0.7,h:1.3,shape:'bike',fill:'#6abf9b'},
+   {type:'functional',name:'Functional Trainer',w:1.4,h:1.2,shape:'cable',fill:'#7a86d6'},
+   {type:'dipassist',name:'Dip/Chin Assist',w:1.2,h:1.4,shape:'machine',fill:'#3f6fb0'},
+   {type:'backext',name:'Back / Deltoid Fly',w:1.1,h:1.3,shape:'machine',fill:'#3f6fb0'},
+   {type:'sealrow',name:'Chest-Supported Row',w:0.8,h:1.5,shape:'bench',fill:'#e2624c'},
+   {type:'smith',name:'Smith Machine',w:1.5,h:1.4,shape:'rack',fill:'#e2624c'},
+   {type:'dbaframe',name:'A-Frame DB Rack',w:1.0,h:0.6,shape:'dumbbellrack',fill:'#e2624c'},
+   {type:'dbvertical',name:'Vertical DB Rack (yellow)',w:1.2,h:0.5,shape:'dumbbellrack',fill:'#e2624c'},
+   {type:'plrow',name:'Plate-Loaded Row',w:1.3,h:1.5,shape:'machine',fill:'#e2624c'},
+   {type:'plchest',name:'Plate-Loaded Chest Press',w:1.3,h:1.4,shape:'machine',fill:'#e2624c'},
+   {type:'hacksquat',name:'Hack Squat',w:1.4,h:1.8,shape:'legpress',fill:'#e2624c'},
+   {type:'legpress45',name:'Leg Press 45°',w:1.4,h:2.0,shape:'legpress',fill:'#e2624c'},
+ ]},
 ];
-const TYPEMAP={};CATALOG.forEach(g=>g.items.forEach(it=>{it.cat=g.cat;it.fill=g.color;TYPEMAP[it.type]=it;}));
+const TYPEMAP={};CATALOG.forEach(g=>g.items.forEach(it=>{it.cat=g.cat;it.fill=it.fill||g.color;TYPEMAP[it.type]=it;}));
 
 /* ============================================================ STATE */
 let S = null;          // scene
