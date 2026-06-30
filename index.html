@@ -424,6 +424,23 @@ const CATALOG = [
      {t:'rect',x:-0.95,y:0,w:0.8,h:0.38,r:0.05,fill:'shade',amt:-0.22},
      {t:'rect',x:-1.0,y:0.48,w:0.42,h:0.2,fill:'shade',amt:-0.3}
    ]},
+   {type:'benchpress',name:'Olympic Bench Press',w:1.6,h:1.9,shape:'parts',fill:'#e2624c',parts:[
+     {t:'rect',x:0,y:0.1,w:0.42,h:1.5,r:0.06,fill:'shade',amt:-0.15},
+     {t:'rect',x:0,y:0.72,w:0.5,h:0.4,r:0.06,fill:'base'},
+     {t:'rect',x:-0.48,y:-0.65,w:0.12,h:0.45,r:0.02,fill:'shade',amt:-0.3},
+     {t:'rect',x:0.48,y:-0.65,w:0.12,h:0.45,r:0.02,fill:'shade',amt:-0.3},
+     {t:'line',x:-0.72,y:-0.7,x2:0.72,y2:-0.7,lw:0.06,stroke:'#555'},
+     {t:'circle',x:-0.66,y:-0.7,r:0.16,fill:'shade',amt:-0.4},
+     {t:'circle',x:0.66,y:-0.7,r:0.16,fill:'shade',amt:-0.4}
+   ]},
+   {type:'lowrow',name:'Plate-Loaded Low Row',w:1.7,h:1.1,shape:'parts',fill:'#e2624c',parts:[
+     {t:'rect',x:-0.25,y:0,w:0.95,h:0.5,r:0.06,fill:'shade',amt:-0.2},
+     {t:'rect',x:0.15,y:-0.32,w:0.5,h:0.3,r:0.05,fill:'shade',amt:-0.08},
+     {t:'circle',x:0.6,y:0.12,r:0.3,fill:'shade',amt:-0.35},
+     {t:'circle',x:0.6,y:0.12,r:0.18,fill:'base'},
+     {t:'line',x:0.55,y:0.1,x2:-0.35,y2:-0.28,lw:0.05,stroke:'#333'},
+     {t:'rect',x:-0.78,y:0.18,w:0.28,h:0.5,r:0.03,fill:'shade',amt:-0.3}
+   ]},
  ]},
 ];
 const TYPEMAP={};CATALOG.forEach(g=>g.items.forEach(it=>{it.cat=g.cat;it.fill=it.fill||g.color;TYPEMAP[it.type]=it;}));
