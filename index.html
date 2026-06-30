@@ -62,6 +62,7 @@
   .mbtn{flex:1;background:var(--panel2);border:1px solid var(--line);color:var(--txt);border-radius:6px;padding:6px 4px;font-size:11px;cursor:pointer;text-align:center}
   .mbtn:hover{border-color:#55606e}
   .mbtn.danger:hover{border-color:var(--danger);color:var(--danger)}
+  .mbtn.active{background:var(--accent);border-color:var(--accent);color:#06203f;font-weight:600}
   .swatches{display:flex;gap:5px;flex-wrap:wrap;margin-top:6px}
   .sw{width:20px;height:20px;border-radius:5px;border:1px solid rgba(255,255,255,.15);cursor:pointer}
   .empty{padding:18px 14px;color:var(--muted);font-size:12px;line-height:1.5}
@@ -379,6 +380,8 @@ const CATALOG = [
    {type:'calf',name:'Calf Raise',w:1.1,h:1.4,shape:'machine'},
    {type:'cable',name:'Cable Station',w:1.4,h:1.0,shape:'cable'},
    {type:'smith',name:'Smith Machine',w:1.5,h:1.4,shape:'rack'},
+   {type:'deltfly',name:'Deltoid Fly',w:1.2,h:1.4,shape:'machine'},
+   {type:'bicepscurl',name:'Biceps Curl',w:1.1,h:1.3,shape:'machine'},
  ]},
  {cat:'Free Weights', color:'#e2624c', items:[
    {type:'dumbbells',name:'Dumbbell Rack',w:3.0,h:0.6,shape:'dumbbellrack'},
@@ -568,9 +571,11 @@ function applyAlign(item,cx,cy){
   let bX=null,bY=null;
   const others=S.objects.concat(S.areas).filter(o=>!sel.some(s=>s.id===o.id&&s.kind===o.kind));
   for(const o of others){const oh=axis(o.rot||0);
+    // same-colour areas snap together more eagerly (flush, no gap) for seamless zones
+    const T=(o.kind==='area'&&item.kind==='area'&&o.fill===item.fill)?tol*2.6:tol;
     const oX=oh?[o.x-o.w/2,o.x,o.x+o.w/2]:[o.x], oY=oh?[o.y-o.h/2,o.y,o.y+o.h/2]:[o.y];
-    for(const mx of myX)for(const ox of oX){const d=ox-mx;if(Math.abs(d)<tol&&(!bX||Math.abs(d)<Math.abs(bX.d)))bX={d,line:ox};}
-    for(const my of myY)for(const oy of oY){const d=oy-my;if(Math.abs(d)<tol&&(!bY||Math.abs(d)<Math.abs(bY.d)))bY={d,line:oy};}}
+    for(const mx of myX)for(const ox of oX){const d=ox-mx;if(Math.abs(d)<T&&(!bX||Math.abs(d)<Math.abs(bX.d)))bX={d,line:ox};}
+    for(const my of myY)for(const oy of oY){const d=oy-my;if(Math.abs(d)<T&&(!bY||Math.abs(d)<Math.abs(bY.d)))bY={d,line:oy};}}
   if(bX){cx+=bX.d;guideX=bX.line;} if(bY){cy+=bY.d;guideY=bY.line;}
   return {x:cx,y:cy};
 }
@@ -716,10 +721,17 @@ function drawArea(a){
   const [sx,sy]=w2s(a.x,a.y);const w=a.w*cam.zoom,h=a.h*cam.zoom;
   ctx.save();ctx.translate(sx,sy);ctx.rotate(a.rot||0);
   ctx.fillStyle=hexA(a.fill,a.op);ctx.fillRect(-w/2,-h/2,w,h);
+  const bd=a.brd||{t:1,r:1,b:1,l:1};
   ctx.strokeStyle=hexA(a.fill,0.9);ctx.lineWidth=2;
-  if(a.dash)ctx.setLineDash([8,6]);ctx.strokeRect(-w/2,-h/2,w,h);ctx.setLineDash([]);
+  if(a.dash)ctx.setLineDash([8,6]);
+  ctx.beginPath();
+  if(bd.t){ctx.moveTo(-w/2,-h/2);ctx.lineTo(w/2,-h/2);}
+  if(bd.r){ctx.moveTo(w/2,-h/2);ctx.lineTo(w/2,h/2);}
+  if(bd.b){ctx.moveTo(-w/2,h/2);ctx.lineTo(w/2,h/2);}
+  if(bd.l){ctx.moveTo(-w/2,-h/2);ctx.lineTo(-w/2,h/2);}
+  ctx.stroke();ctx.setLineDash([]);
   ctx.fillStyle=hexA(a.fill,1);ctx.font='600 13px -apple-system,sans-serif';ctx.textBaseline='top';
-  ctx.fillText(a.name,-w/2+8,-h/2+7);
+  ctx.fillText(a.name,(a.lx!=null?a.lx*cam.zoom:-w/2+8),(a.ly!=null?a.ly*cam.zoom:-h/2+7));
   ctx.restore();
 }
 function drawWall(w){
@@ -833,6 +845,11 @@ function hitHandle(px,py){const items=selItems();if(items.length!==1)return null
   for(const h of hs)if(Math.abs(px-h.x)<T&&Math.abs(py-h.y)<T)return {type:'resize',dir:h.dir};
   return null;
 }
+function hitAreaLabel(a,px,py){const w=a.w*cam.zoom,h=a.h*cam.zoom;
+  const lx=(a.lx!=null?a.lx*cam.zoom:-w/2+8), ly=(a.ly!=null?a.ly*cam.zoom:-h/2+7);
+  const [sx,sy]=w2s(a.x,a.y);const x0=sx+lx,y0=sy+ly;
+  ctx.font='600 13px -apple-system,sans-serif';const tw=ctx.measureText(a.name||'').width;
+  return px>=x0-5&&px<=x0+tw+5&&py>=y0-3&&py<=y0+18;}
 
 /* ============================================================ INPUT */
 let drag=null;let spaceDown=false;
@@ -866,6 +883,8 @@ cv.addEventListener('pointerdown',e=>{
     else if(handle.type==='resize')drag=startResize(o,handle.dir);
     else if(handle.type==='wallpt')drag={mode:'wallpt',o,pt:handle.pt};
     return;}
+  if(sel.length===1){const sa=getItem(sel[0]);
+    if(sa&&sa.kind==='area'&&hitAreaLabel(sa,px,py)){drag={mode:'arealabel',o:sa};return;}}
   const hit=hitObject(wx,wy);
   if(hit){
     const already=sel.some(s=>s.id===hit.id&&s.kind===hit.kind);
@@ -907,6 +926,7 @@ cv.addEventListener('pointermove',e=>{
   if(m==='area'){drag.cur={x:wx,y:wy};draw();return;}
   if(m==='wall'){drag.cur={x:snap(wx),y:snap(wy)};draw();return;}
   if(m==='marquee'){drag.curS={x:px,y:py};draw();return;}
+  if(m==='arealabel'){const a=drag.o;a.lx=wx-a.x;a.ly=wy-a.y;draw();return;}
   if(m==='move'){const ddx=wx-drag.startW.x, ddy=wy-drag.startW.y;
     guideX=guideY=null;
     const single=drag.orig.length===1 && drag.orig[0].kind!=='wall';
@@ -1085,6 +1105,14 @@ function refreshProps(){const root=document.getElementById('props');const items=
     if(o.kind==='area'){
       html+=field('Opacity',`<input type="range" min="0" max="100" value="${Math.round(o.op*100)}" oninput="setF('op',this.value/100)">`);
       html+=`<div class="field"><label>Dashed border</label><label class="chk"><input type="checkbox" ${o.dash?'checked':''} onchange="setF('dash',this.checked)"> dashed</label></div>`;
+      const bd=o.brd||{t:1,r:1,b:1,l:1};
+      html+=`<div class="field"><label>Borders — tap a side to remove it</label><div class="minirow">
+        <button class="mbtn${bd.t?' active':''}" onclick="toggleBorder('t')">Top</button>
+        <button class="mbtn${bd.b?' active':''}" onclick="toggleBorder('b')">Bottom</button>
+        <button class="mbtn${bd.l?' active':''}" onclick="toggleBorder('l')">Left</button>
+        <button class="mbtn${bd.r?' active':''}" onclick="toggleBorder('r')">Right</button></div></div>`;
+      html+=`<div class="field"><label>Name label — drag it on the canvas to move</label><div class="minirow">
+        <button class="mbtn" onclick="resetLabel()">Reset to corner</button></div></div>`;
     }
     html+=colorField(o,'fill','Fill');
   }
@@ -1107,6 +1135,9 @@ window.setF=(k,v)=>{const o=selItems()[0];if(!o)return;
   if(['x','y','w','h','x1','y1','x2','y2','th','op'].includes(k))v=parseFloat(v)||0;
   o[k]=v;save();commitSoon();draw();if(k==='name'||k==='locked')refreshLayers();};
 window.setRot=(deg)=>{const o=selItems()[0];if(!o)return;o.rot=deg*Math.PI/180;save();commitSoon();draw();};
+window.toggleBorder=(side)=>{const o=selItems()[0];if(!o||o.kind!=='area')return;
+  o.brd=Object.assign({t:1,r:1,b:1,l:1},o.brd);o.brd[side]=o.brd[side]?0:1;save();commitSoon();refreshProps();draw();};
+window.resetLabel=()=>{const o=selItems()[0];if(!o||o.kind!=='area')return;delete o.lx;delete o.ly;save();commitSoon();draw();};
 function refreshFields(){ // light update of numeric inputs while dragging
   const o=selItems()[0];if(!o)return;refreshProps();}
 
